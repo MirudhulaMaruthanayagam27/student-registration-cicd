@@ -32,6 +32,10 @@ export const environment = {
     const targetFilePath = path.join(ENVIRONMENTS_DIR, `environment.${targetEnvName}.ts`);
     const defaultFilePath = path.join(ENVIRONMENTS_DIR, 'environment.ts');
 
+    if (!fs.existsSync(ENVIRONMENTS_DIR)) {
+        fs.mkdirSync(ENVIRONMENTS_DIR, { recursive: true });
+    }
+
     fs.writeFileSync(targetFilePath, output, 'utf8');
     if (targetFilePath !== defaultFilePath) {
         fs.writeFileSync(defaultFilePath, output, 'utf8');
