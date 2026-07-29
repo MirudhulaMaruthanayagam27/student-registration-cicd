@@ -46,6 +46,7 @@
               "outputHashing": "all"
             },
             "development": {
+              "outputPath": "dist/dev",
               "buildOptimizer": false,
               "optimization": false,
               "vendorChunk": true,
@@ -60,6 +61,7 @@
               ]
             },
             "staging": {
+              "outputPath": "dist/staging",
               "budgets": [
                 {
                   "type": "initial",

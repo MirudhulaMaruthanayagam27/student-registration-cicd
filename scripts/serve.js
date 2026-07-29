@@ -4,7 +4,7 @@ const path = require('path');
 
 const port = process.argv[2] || 8081;
 const envDir = process.argv[3] || 'dev';
-const directoryPath = path.join(__dirname, '..', 'dist', envDir);
+const directoryPath = path.join(__dirname, '..', 'dist', 'student-registration');
 
 const server = http.createServer((req, res) => {
     let filePath = path.join(directoryPath, req.url === '/' ? 'index.html' : req.url);
