@@ -12,7 +12,8 @@ export class StudentService {
   constructor(private http: HttpClient) { }
 
   addStudent(student: Student): Observable<any> {
-    const url = `${environment.apiUrl}students`;
+    const baseUrl = environment.apiUrl ? (environment.apiUrl.endsWith('/') ? environment.apiUrl : environment.apiUrl + '/') : '';
+    const url = `${baseUrl}students`;
     
     return this.http.post(url, student);
   }
