@@ -9,7 +9,7 @@
     "prestart": "npm run generate-env:local",
     "start": "ng serve",
     "build": "ng build",
-    "build:dev": "npm run generate-env:dev && ng build",
+    "build:dev": "npm run generate-env:dev && ng build --configuration development",
     "build:staging": "npm run generate-env:staging && ng build --configuration staging",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"

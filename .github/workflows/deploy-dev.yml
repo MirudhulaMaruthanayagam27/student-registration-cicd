@@ -58,7 +58,7 @@ jobs:
           echo "=========================================="
           echo "📂 Verifying Dev Build Output (dist folder)..."
           echo "=========================================="
-          ls -la dist/student-registration
+          ls -la dist/dev
           echo "✅ SUCCESS: The dist folder is completely updated for Dev Environment!"
 
       # Step 6: Deploy to the Dev Server
@@ -67,8 +67,9 @@ jobs:
         run: |
           # Ensure target directory exists
           mkdir -p dist/dev
-          # Sync the compiled files into the Nginx container's mapped volume
-          rsync -av --delete dist/student-registration/ dist/dev/
+          # Sync the compiled files into the Nginx container's mapped volume (simulated)
+          # Since Angular outputs to dist/dev directly, this step is just verifying the directory exists.
+          rsync -av --delete dist/dev/ dist/dev_deployed/
           
       # Step 7: Restart Nginx (Optional, since Nginx serves files dynamically)
       # If this were a real SSH deployment, you might restart the service here.

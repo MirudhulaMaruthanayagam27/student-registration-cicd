@@ -54,14 +54,14 @@ jobs:
           echo "=========================================="
           echo "📂 Verifying Staging Build Output (dist folder)..."
           echo "=========================================="
-          ls -la dist/student-registration
+          ls -la dist/staging
           echo "✅ SUCCESS: The dist folder is completely updated for Staging Environment!"
 
       # Deploying to the Staging mapped directory
       - name: Deploy to Staging Container
         run: |
           mkdir -p dist/staging
-          rsync -av --delete dist/student-registration/ dist/staging/
+          rsync -av --delete dist/staging/ dist/staging_deployed/
           
       - name: Restart Server
         run: echo "Deployed to Staging! Nginx is serving the new files."
