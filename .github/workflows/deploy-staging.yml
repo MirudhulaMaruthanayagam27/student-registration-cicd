@@ -32,17 +32,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Create .env.development from GitHub secret
+      - name: Create .env.staging from GitHub secret
         run: |
           echo "=========================================="
           echo "🔒 Accessing GitHub Secrets for Staging Environment..."
           echo "=========================================="
-          echo "API_BASE_URL=${{ secrets.STAGING_API_BASE_URL }}" > .env.development
-          echo "✅ .env.development file generated successfully!"
+          echo "API_BASE_URL=${{ secrets.STAGING_API_BASE_URL }}" > .env.staging
+          echo "✅ .env.staging file generated successfully!"
 
-      # Step 4.5: Generate Angular development environment file
-      - name: Generate Angular development environment file
-        run: npm run generate-env:dev
+      # Step 4.5: Generate Angular staging environment file
+      - name: Generate Angular staging environment file
+        run: npm run generate-env:staging
 
       # Step 5: Build the Angular app for staging
       - name: Build Angular Application (Staging)
