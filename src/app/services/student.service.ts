@@ -12,6 +12,7 @@ export class StudentService {
 
   addStudent(student: Student): Observable<any> {
     const baseUrl = environment.apiUrl ? (environment.apiUrl.endsWith('/') ? environment.apiUrl : environment.apiUrl + '/') : '';
+    console.log('🔗 [DEBUG] Using API Base URL:', baseUrl);
     return this.http.post<Student>(
       `${baseUrl}students`,
       student
