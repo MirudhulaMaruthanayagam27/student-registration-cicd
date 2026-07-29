@@ -10,6 +10,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Log Push/Merge Details
+        run: |
+          echo "=========================================="
+          echo "🚀 DEPLOYMENT TRIGGERED!"
+          echo "=========================================="
+          echo "Event Type: ${{ github.event_name }}"
+          echo "Target Branch: ${{ github.ref_name }}"
+          echo "Commit Message: ${{ github.event.head_commit.message }}"
+          echo "Committed By: ${{ github.actor }}"
+          echo "=========================================="
+
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -21,15 +32,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Here we map the STAGING secrets instead of DEV
-      - name: Generate env.js from Secrets
-        run: node scripts/generate-env.js
-        env:
-          API_BASE_URL: ${{ secrets.STAGING_API_BASE_URL }}
-          REGISTRATION_BASE_URL: ${{ secrets.STAGING_REGISTRATION_BASE_URL }}
+      - name: Create .env.development from GitHub secret
+        run: |
+          echo "=========================================="
+          echo "🔒 Accessing GitHub Secrets for Staging Environment..."
+          echo "=========================================="
+          echo "API_BASE_URL=${{ secrets.STAGING_API_BASE_URL }}" > .env.development
+          echo "✅ .env.development file generated successfully!"
 
-      - name: Build application
-        run: npm run build
+      # Step 4.5: Generate Angular development environment file
+      - name: Generate Angular development environment file
+        run: npm run generate-env:dev
+
+      # Step 5: Build the Angular app for staging
+      - name: Build Angular Application (Staging)
+        run: npm run build:staging
+
+      # Step 6: Verify Build Output
+      - name: Verify Dist Folder
+        run: |
+          echo "=========================================="
+          echo "📂 Verifying Staging Build Output (dist folder)..."
+          echo "=========================================="
+          ls -la dist/student-registration
+          echo "✅ SUCCESS: The dist folder is completely updated for Staging Environment!"
 
       # Deploying to the Staging mapped directory
       - name: Deploy to Staging Container

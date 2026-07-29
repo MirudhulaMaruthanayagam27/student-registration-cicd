@@ -3,13 +3,24 @@ name: Deploy to Dev Server
 on:
   push:
     branches:
-      - develop
+      - dev
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Log Push/Merge Details
+        run: |
+          echo "=========================================="
+          echo "🚀 DEPLOYMENT TRIGGERED!"
+          echo "=========================================="
+          echo "Event Type: ${{ github.event_name }}"
+          echo "Target Branch: ${{ github.ref_name }}"
+          echo "Commit Message: ${{ github.event.head_commit.message }}"
+          echo "Committed By: ${{ github.actor }}"
+          echo "=========================================="
+
       # Step 1: Checkout the code from the develop branch
       - name: Checkout code
         uses: actions/checkout@v3
@@ -24,18 +35,31 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Step 4: Run our dynamic environment script
-      # This injects the GitHub Secrets directly into a new env.js file
-      - name: Generate env.js from Secrets
-        run: node scripts/generate-env.js
-        env:
-          API_BASE_URL: ${{ secrets.DEV_API_BASE_URL }}
-          REGISTRATION_BASE_URL: ${{ secrets.DEV_REGISTRATION_BASE_URL }}
+      # Step 4: Create .env.development from GitHub secrets
+      - name: Create .env.development from GitHub secret
+        run: |
+          echo "=========================================="
+          echo "🔒 Accessing GitHub Secrets for Dev Environment..."
+          echo "=========================================="
+          echo "API_BASE_URL=${{ secrets.DEV_API_BASE_URL }}" > .env.development
+          echo "✅ .env.development file generated successfully!"
 
-      # Step 5: Build the Angular application
-      # Note: We build once, without relying on environment.ts configurations
-      - name: Build application
-        run: npm run build
+      # Step 4.5: Generate Angular development environment file
+      - name: Generate Angular development environment file
+        run: npm run generate-env:dev
+
+      # Step 5: Build the Angular app for development
+      - name: Build Angular Application (Dev)
+        run: npm run build:dev
+
+      # Step 6: Verify Build Output
+      - name: Verify Dist Folder
+        run: |
+          echo "=========================================="
+          echo "📂 Verifying Dev Build Output (dist folder)..."
+          echo "=========================================="
+          ls -la dist/student-registration
+          echo "✅ SUCCESS: The dist folder is completely updated for Dev Environment!"
 
       # Step 6: Deploy to the Dev Server
       # In this fake setup, we copy the build files to the directory mapped to our Docker container
