@@ -1,7 +1,10 @@
 export interface Student {
-  id?: string;
+
+  id?: number;
   name: string;
   email: string;
-  department: string;
+  department: string
   phone: string;
+  created_at?: string;
+
 }
