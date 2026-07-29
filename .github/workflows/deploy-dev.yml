@@ -1,0 +1,52 @@
+name: Deploy to Dev Server
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code from the develop branch
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Install Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Step 3: Install Angular dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Step 4: Run our dynamic environment script
+      # This injects the GitHub Secrets directly into a new env.js file
+      - name: Generate env.js from Secrets
+        run: node scripts/generate-env.js
+        env:
+          API_BASE_URL: ${{ secrets.DEV_API_BASE_URL }}
+          REGISTRATION_BASE_URL: ${{ secrets.DEV_REGISTRATION_BASE_URL }}
+
+      # Step 5: Build the Angular application
+      # Note: We build once, without relying on environment.ts configurations
+      - name: Build application
+        run: npm run build
+
+      # Step 6: Deploy to the Dev Server
+      # In this fake setup, we copy the build files to the directory mapped to our Docker container
+      - name: Deploy to Dev Container
+        run: |
+          # Ensure target directory exists
+          mkdir -p dist/dev
+          # Sync the compiled files into the Nginx container's mapped volume
+          rsync -av --delete dist/student-registration/ dist/dev/
+          
+      # Step 7: Restart Nginx (Optional, since Nginx serves files dynamically)
+      # If this were a real SSH deployment, you might restart the service here.
+      - name: Restart Server
+        run: echo "Deployed to Dev! Nginx is serving the new files."

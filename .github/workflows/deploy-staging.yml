@@ -1,0 +1,41 @@
+name: Deploy to Staging Server
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Here we map the STAGING secrets instead of DEV
+      - name: Generate env.js from Secrets
+        run: node scripts/generate-env.js
+        env:
+          API_BASE_URL: ${{ secrets.STAGING_API_BASE_URL }}
+          REGISTRATION_BASE_URL: ${{ secrets.STAGING_REGISTRATION_BASE_URL }}
+
+      - name: Build application
+        run: npm run build
+
+      # Deploying to the Staging mapped directory
+      - name: Deploy to Staging Container
+        run: |
+          mkdir -p dist/staging
+          rsync -av --delete dist/student-registration/ dist/staging/
+          
+      - name: Restart Server
+        run: echo "Deployed to Staging! Nginx is serving the new files."
