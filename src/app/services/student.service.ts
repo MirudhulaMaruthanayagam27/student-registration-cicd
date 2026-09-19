@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+
 import { Student } from '../models/student.model';
 import { environment } from '../../environments/environment';
 
@@ -8,14 +9,24 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class StudentService {
-  constructor(private http: HttpClient) { }
+  // The URL is NOT hardcoded. It comes from the environment file,
+  // so a production build can point at a different API.
+  private apiUrl = `${environment.apiUrl}/students`;
 
-  addStudent(student: Student): Observable<any> {
-    const baseUrl = environment.apiUrl ? (environment.apiUrl.endsWith('/') ? environment.apiUrl : environment.apiUrl + '/') : '';
-    console.log('🔗 [DEBUG] Using API Base URL:', baseUrl);
-    return this.http.post<Student>(
-      `${baseUrl}students`,
-      student
-    );
+  constructor(private http: HttpClient) {}
+
+  // GET /students  -> read every student
+  getStudents(): Observable<Student[]> {
+    return this.http.get<Student[]>(this.apiUrl);
+  }
+
+  // POST /students -> create one student
+  addStudent(student: Student): Observable<Student> {
+    return this.http.post<Student>(this.apiUrl, student);
+  }
+
+  // DELETE /students/:id -> remove one student
+  deleteStudent(id: number): Observable<unknown> {
+    return this.http.delete(`${this.apiUrl}/${id}`);
   }
 }
