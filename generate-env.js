@@ -6,7 +6,6 @@
 
 const fs = require('fs');
 const path = require('path');
-
 const folder = path.join('src', 'environments');
 
 // process.env holds the environment variables of the current machine.

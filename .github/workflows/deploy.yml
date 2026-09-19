@@ -18,6 +18,7 @@ on:
   # Lets you re-run this workflow by hand from the Actions tab,
   # without making a new commit. Useful right after adding secrets.
   workflow_dispatch:
+git commit -m "Generate environment files at build time instead of committing them"
 
 jobs:
   build:
