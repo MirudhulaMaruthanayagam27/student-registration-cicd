@@ -29,51 +29,65 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Install Node.js 20 (the same major version used locally).
+      # 2. Prove the environment files are NOT in the repository.
+      #    This runs BEFORE the build, so the folder should not exist yet.
+      - name: Show that no environment file was checked out
+        run: |
+          echo "Files tracked by Git under src/environments:"
+          git ls-files src/environments/
+          echo "(nothing listed above = nothing is committed, as intended)"
+          echo ""
+          echo "Folder on disk right after checkout:"
+          ls -l src/environments/ 2>&1 || echo "folder does not exist yet - correct"
+
+      # 3. Install Node.js 20 (the same major version used locally).
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # 3. Install the exact dependency versions from package-lock.json.
+      # 4. Install the exact dependency versions from package-lock.json.
       - name: Install dependencies
         run: npm ci
 
-      # 4. Build. "npm run build" already runs generate-env.js first,
-      #    so the secrets are supplied here as environment variables.
+      # 5. Build. "npm run build" runs generate-env.js first, which CREATES
+      #    the environment files using the secrets supplied here.
       - name: Build Angular application
         run: npm run build
         env:
           API_URL: ${{ secrets.API_URL }}
           APP_ENV: ${{ secrets.APP_ENV }}
 
-      # 5. Show the file that generate-env.js produced.
-      #    GitHub automatically replaces any secret value with *** in logs,
+      # 6. Show the file that generate-env.js just created.
+      #    GitHub replaces any secret value with *** in logs,
       #    so seeing *** is PROOF the value came from a secret.
       - name: Show generated environment file
         run: |
+          echo "Folder on disk AFTER the build:"
+          ls -l src/environments/
+          echo ""
           echo "----- src/environments/environment.production.ts -----"
           cat src/environments/environment.production.ts
           echo "------------------------------------------------------"
 
-      # 6. Fail loudly if the secret never reached the build.
+      # 7. Fail loudly if the secret never reached the build.
       - name: Verify the secret was actually applied
         run: |
-          FILE=src/environments/environment.production.ts
+          FILE="src/environments/environment.production.ts"
 
-          if grep -q "example-api.com" "$FILE"; then
-            echo "::error::API_URL secret was NOT applied. The committed placeholder is still there."
+          if [ ! -f "$FILE" ]; then
+            echo "::error::generate-env.js did not create the production environment file."
             exit 1
           fi
 
           if grep -q "localhost:3000" "$FILE"; then
-            echo "::error::API_URL is empty, so generate-env.js fell back to localhost. Is the secret named exactly API_URL?"
+            echo "::error::API_URL is empty, so generate-env.js used its localhost fallback. Is the secret named exactly API_URL?"
             exit 1
           fi
 
           echo "OK: environment.production.ts was generated from the repository secrets."
 
-      # 7. Prove a real build artifact exists.
+      # 8. Prove a real build artifact exists.
       - name: Show build output
         run: ls -R dist/student-registration/browser

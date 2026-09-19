@@ -43,14 +43,25 @@ Output goes to `dist/student-registration/browser/`.
 
 ## Environments
 
-| File | Used by | apiUrl |
-|---|---|---|
-| `src/environments/environment.ts` | `npm start` (development) | `http://localhost:3000` |
-| `src/environments/environment.production.ts` | `npm run build` (production) | supplied by `generate-env.js` |
+The files in `src/environments/` are **generated, never committed**.
+They are in `.gitignore`. A fresh clone has no environments folder at all.
 
-`generate-env.js` reads `API_URL` and `APP_ENV` from environment variables and
-writes `environment.production.ts`. In GitHub Actions those values come from
-GitHub Secrets.
+`generate-env.js` creates both files, and it runs automatically:
+
+| You run | What runs first | Which file Angular uses | apiUrl |
+|---|---|---|---|
+| `npm start` | `prestart` -> generate-env | `environment.ts` | `http://localhost:3000` |
+| `npm run build` | generate-env | `environment.production.ts` | from `API_URL` |
+
+The swap for production builds is done by `fileReplacements` in `angular.json`.
+
+```
+GitHub Secret  ->  env variable  ->  generate-env.js  ->  environment.production.ts  ->  ng build
+```
+
+If `API_URL` is not set, generate-env.js falls back to `http://localhost:3000`,
+so a locally-built `dist/` is never a real production artifact. Only the
+GitHub Actions build is.
 
 ## Branches
 

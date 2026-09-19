@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "ng": "ng",
+    "prestart": "npm run generate-env",
     "start": "ng serve",
     "api": "json-server --watch db.json --port 3000",
     "generate-env": "node generate-env.js",
