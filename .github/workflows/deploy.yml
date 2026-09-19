@@ -8,17 +8,14 @@ on:
       - development
       - main
 
-  # Runs when a Pull Request TARGETS these branches,
-  # i.e. BEFORE the merge happens. This is the "check before merging" run.
+  # Runs when a Pull Request TARGETS these branches (before the merge).
   pull_request:
     branches:
       - development
       - main
 
-  # Lets you re-run this workflow by hand from the Actions tab,
-  # without making a new commit. Useful right after adding secrets.
+  # Lets you re-run this workflow by hand from the Actions tab.
   workflow_dispatch:
-git commit -m "Generate environment files at build time instead of committing them"
 
 jobs:
   build:
@@ -26,53 +23,81 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Copy the repository onto the runner.
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Prove the environment files are NOT in the repository.
-      #    This runs BEFORE the build, so the folder should not exist yet.
-      - name: Show that no environment file was checked out
+      # Which secrets exist? Only the NAMES are printed, never the values.
+      - name: Which secrets does this run have?
         run: |
-          echo "Files tracked by Git under src/environments:"
-          git ls-files src/environments/
-          echo "(nothing listed above = nothing is committed, as intended)"
-          echo ""
-          echo "Folder on disk right after checkout:"
-          ls -l src/environments/ 2>&1 || echo "folder does not exist yet - correct"
+          echo "Secret names available to this run:"
+          echo '${{ toJSON(secrets) }}' | jq -r 'keys[]' | sed 's/^/  - /'
 
-      # 3. Install Node.js 20 (the same major version used locally).
+      # Are the two we need actually filled in?
+      - name: Are API_URL and APP_ENV set?
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          APP_ENV: ${{ secrets.APP_ENV }}
+        run: |
+          if [ -n "$API_URL" ]; then
+            echo "API_URL = SET (${#API_URL} characters)"
+          else
+            echo "API_URL = MISSING"
+          fi
+
+          if [ -n "$APP_ENV" ]; then
+            echo "APP_ENV = SET (${#APP_ENV} characters)"
+          else
+            echo "APP_ENV = MISSING"
+          fi
+
+      # BEFORE picture: the environment folder should not exist.
+      - name: BEFORE - no environment file in the repository
+        run: |
+          echo "Files Git has under src/environments:"
+          git ls-files src/environments/ | wc -l
+          echo "Folder on disk:"
+          ls src/environments/ 2>/dev/null || echo "folder does not exist - correct"
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # 4. Install the exact dependency versions from package-lock.json.
       - name: Install dependencies
         run: npm ci
 
-      # 5. Build. "npm run build" runs generate-env.js first, which CREATES
-      #    the environment files using the secrets supplied here.
+      # The secrets are handed to the build here.
       - name: Build Angular application
         run: npm run build
         env:
           API_URL: ${{ secrets.API_URL }}
           APP_ENV: ${{ secrets.APP_ENV }}
 
-      # 6. Show the file that generate-env.js just created.
-      #    GitHub replaces any secret value with *** in logs,
-      #    so seeing *** is PROOF the value came from a secret.
-      - name: Show generated environment file
+      # AFTER picture: simple commands proving the secret made the file.
+      - name: AFTER - proof the secret created the file
+        env:
+          API_URL: ${{ secrets.API_URL }}
         run: |
-          echo "Folder on disk AFTER the build:"
-          ls -l src/environments/
-          echo ""
-          echo "----- src/environments/environment.production.ts -----"
-          cat src/environments/environment.production.ts
-          echo "------------------------------------------------------"
+          echo "1) Files Git has under src/environments  (0 = nothing committed)"
+          git ls-files src/environments/ | wc -l
 
-      # 7. Fail loudly if the secret never reached the build.
+          echo ""
+          echo "2) Files on disk now"
+          ls src/environments/
+
+          echo ""
+          echo "3) Length of the API_URL secret, in characters"
+          echo -n "$API_URL" | wc -c
+
+          echo ""
+          echo "4) Times the secret's exact text appears in the file  (1 = YES)"
+          grep -cF -- "$API_URL" src/environments/environment.production.ts
+
+          echo ""
+          echo "5) The generated file (secret values hidden as ***)"
+          cat src/environments/environment.production.ts
+
       - name: Verify the secret was actually applied
         run: |
           FILE="src/environments/environment.production.ts"
@@ -89,6 +114,13 @@ jobs:
 
           echo "OK: environment.production.ts was generated from the repository secrets."
 
-      # 8. Prove a real build artifact exists.
       - name: Show build output
         run: ls -R dist/student-registration/browser
+
+      # Keeps the built app downloadable for 7 days.
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: student-registration-build
+          path: dist/student-registration/browser
+          retention-days: 7
