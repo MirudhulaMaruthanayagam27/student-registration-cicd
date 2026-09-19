@@ -1,0 +1,84 @@
+<div class="card">
+  <h1>Student Registration</h1>
+
+  <!-- [formGroup] connects this HTML form to studentForm in the .ts file -->
+  <form [formGroup]="studentForm" (ngSubmit)="register()">
+
+    <div class="field">
+      <label for="name">Name</label>
+      <input id="name" type="text" formControlName="name" />
+      @if (studentForm.controls['name'].touched && studentForm.controls['name'].invalid) {
+        <span class="error">Name is required</span>
+      }
+    </div>
+
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" type="email" formControlName="email" />
+      @if (studentForm.controls['email'].touched && studentForm.controls['email'].invalid) {
+        <span class="error">A valid email is required</span>
+      }
+    </div>
+
+    <div class="field">
+      <label for="department">Department</label>
+      <select id="department" formControlName="department">
+        <option value="">Select Department</option>
+        <option value="Computer Science">Computer Science</option>
+        <option value="Electronics">Electronics</option>
+        <option value="Mechanical">Mechanical</option>
+        <option value="Civil">Civil</option>
+      </select>
+      @if (studentForm.controls['department'].touched && studentForm.controls['department'].invalid) {
+        <span class="error">Department is required</span>
+      }
+    </div>
+
+    <div class="field">
+      <label for="phone">Phone</label>
+      <input id="phone" type="text" formControlName="phone" />
+      @if (studentForm.controls['phone'].touched && studentForm.controls['phone'].invalid) {
+        <span class="error">Phone is required</span>
+      }
+    </div>
+
+    <button type="submit">Register</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Registered Students</h2>
+
+  @if (students.length === 0) {
+    <p class="empty">No students registered yet.</p>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Department</th>
+          <th>Phone</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (student of students; track student.id) {
+          <tr>
+            <td>{{ student.id }}</td>
+            <td>{{ student.name }}</td>
+            <td>{{ student.email }}</td>
+            <td>{{ student.department }}</td>
+            <td>{{ student.phone }}</td>
+            <td>
+              <button type="button" class="delete" (click)="deleteStudent(student.id)">
+                Delete
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

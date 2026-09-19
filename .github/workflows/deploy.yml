@@ -1,0 +1,126 @@
+name: Student Registration CI/CD
+
+on:
+  # Runs after code lands on any of these branches.
+  push:
+    branches:
+      - feature/student-registration
+      - development
+      - main
+
+  # Runs when a Pull Request TARGETS these branches (before the merge).
+  pull_request:
+    branches:
+      - development
+      - main
+
+  # Lets you re-run this workflow by hand from the Actions tab.
+  workflow_dispatch:
+
+jobs:
+  build:
+    # The temporary Linux machine GitHub gives us. This is called a "runner".
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Which secrets exist? Only the NAMES are printed, never the values.
+      - name: Which secrets does this run have?
+        run: |
+          echo "Secret names available to this run:"
+          echo '${{ toJSON(secrets) }}' | jq -r 'keys[]' | sed 's/^/  - /'
+
+      # Are the two we need actually filled in?
+      - name: Are API_URL and APP_ENV set?
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          APP_ENV: ${{ secrets.APP_ENV }}
+        run: |
+          if [ -n "$API_URL" ]; then
+            echo "API_URL = SET (${#API_URL} characters)"
+          else
+            echo "API_URL = MISSING"
+          fi
+
+          if [ -n "$APP_ENV" ]; then
+            echo "APP_ENV = SET (${#APP_ENV} characters)"
+          else
+            echo "APP_ENV = MISSING"
+          fi
+
+      # BEFORE picture: the environment folder should not exist.
+      - name: BEFORE - no environment file in the repository
+        run: |
+          echo "Files Git has under src/environments:"
+          git ls-files src/environments/ | wc -l
+          echo "Folder on disk:"
+          ls src/environments/ 2>/dev/null || echo "folder does not exist - correct"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The secrets are handed to the build here.
+      - name: Build Angular application
+        run: npm run build
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          APP_ENV: ${{ secrets.APP_ENV }}
+
+      # AFTER picture: simple commands proving the secret made the file.
+      - name: AFTER - proof the secret created the file
+        env:
+          API_URL: ${{ secrets.API_URL }}
+        run: |
+          echo "1) Files Git has under src/environments  (0 = nothing committed)"
+          git ls-files src/environments/ | wc -l
+
+          echo ""
+          echo "2) Files on disk now"
+          ls src/environments/
+
+          echo ""
+          echo "3) Length of the API_URL secret, in characters"
+          echo -n "$API_URL" | wc -c
+
+          echo ""
+          echo "4) Times the secret's exact text appears in the file  (1 = YES)"
+          grep -cF -- "$API_URL" src/environments/environment.production.ts
+
+          echo ""
+          echo "5) The generated file (secret values hidden as ***)"
+          cat src/environments/environment.production.ts
+
+      - name: Verify the secret was actually applied
+        run: |
+          FILE="src/environments/environment.production.ts"
+
+          if [ ! -f "$FILE" ]; then
+            echo "::error::generate-env.js did not create the production environment file."
+            exit 1
+          fi
+
+          if grep -q "localhost:3000" "$FILE"; then
+            echo "::error::API_URL is empty, so generate-env.js used its localhost fallback. Is the secret named exactly API_URL?"
+            exit 1
+          fi
+
+          echo "OK: environment.production.ts was generated from the repository secrets."
+
+      - name: Show build output
+        run: ls -R dist/student-registration/browser
+
+      # Keeps the built app downloadable for 7 days.
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: student-registration-build
+          path: dist/student-registration/browser
+          retention-days: 7
